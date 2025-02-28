@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
-import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
 import React from "react";
+import { getServerSession } from "next-auth";
+import { notFound } from "next/navigation";
+
+import { authOptions } from "@/lib/auth";
+
+import { EcommerceMetrics } from "@/components/ecommerce/EcommerceMetrics";
 import MonthlyTarget from "@/components/ecommerce/MonthlyTarget";
 import MonthlySalesChart from "@/components/ecommerce/MonthlySalesChart";
 import StatisticsChart from "@/components/ecommerce/StatisticsChart";
@@ -13,7 +18,13 @@ export const metadata: Metadata = {
   description: "This is Next.js Home for CommerceGo Dashboard Template",
 };
 
-export default function Ecommerce() {
+export default async function Ecommerce() {
+  // Get the user's session based on the request
+  const session = await getServerSession(authOptions);
+
+  // If there's no session, return a 404 page
+  if (!session) notFound();
+
   return (
     <div className="grid grid-cols-12 gap-4 md:gap-6">
       <div className="col-span-12 space-y-6 xl:col-span-7">
