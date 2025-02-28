@@ -1,5 +1,6 @@
 import GridShape from "@/components/common/GridShape";
 import { Metadata } from "next";
+import { getServerSession } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -10,7 +11,10 @@ export const metadata: Metadata = {
     "This is Next.js Error 404 page for CommerceGo - Next.js Tailwind CSS Admin Dashboard Template",
 };
 
-export default function Error404() {
+export default async function Error404() {
+  // Get the user's session based on the request
+  const session = await getServerSession();
+
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen p-6 overflow-hidden z-1">
       <GridShape />
@@ -38,17 +42,28 @@ export default function Error404() {
           We can’t seem to find the page you are looking for!
         </p>
 
-        <Link
-          href="/"
-          className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-3.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
-        >
-          Back to Home Page
-        </Link>
+        {
+          session ? (
+            <Link
+              href="/"
+              className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-3.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+            >
+              Back to Home Page
+            </Link>
+          ) : (
+            <Link
+              href="/auth/signin"
+              className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-3.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+            >
+              Sign In
+            </Link>
+          )
+        }
+        {/* <!-- Footer --> */}
+        <p className="absolute text-sm text-center text-gray-500 -translate-x-1/2 bottom-6 left-1/2 dark:text-gray-400">
+          &copy; {new Date().getFullYear()} - CommerceGo
+        </p>
       </div>
-      {/* <!-- Footer --> */}
-      <p className="absolute text-sm text-center text-gray-500 -translate-x-1/2 bottom-6 left-1/2 dark:text-gray-400">
-        &copy; {new Date().getFullYear()} - CommerceGo
-      </p>
     </div>
   );
 }
