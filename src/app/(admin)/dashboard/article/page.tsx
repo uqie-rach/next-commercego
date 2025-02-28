@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 
 import { authOptions } from "@/lib/auth"
 import roleAuthenticator from "@/lib/role";
+import ArticlePage from "@/components/dashboard/article/ArticlePage";
 import { redirect } from "next/navigation";
 
 export default async function Article() {
@@ -11,8 +12,7 @@ export default async function Article() {
 
   if (isCoreTeamMember) {
     return (
-      // <ArticlePage />
-      <h1>article</h1>
+      <ArticlePage />
     )
   } else {
     return redirect(new URL('/dashboard', process.env.NEXT_PUBLIC_BASE_URL).toString());
