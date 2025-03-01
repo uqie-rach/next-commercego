@@ -76,7 +76,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     redirect: async () => {
-      return '/dashboard'
+      return '/welcome'
     }
   },
 }
