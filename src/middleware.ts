@@ -17,7 +17,7 @@ export default withAuth(
     const isSigninPage = pathname === '/signin' || pathname.startsWith('/signin')
     const isSignUpPage = pathname === '/signup' || pathname.startsWith('/signup')
 
-    const protectedRoutes = ['/dashboard', '/']
+    const protectedRoutes = ['/dashboard', '/', '/welcome']
     const isAccessingProtectedRoute = protectedRoutes.some(route => pathname?.startsWith(route))
 
     /**
@@ -27,7 +27,7 @@ export default withAuth(
 
       // When authenticated, redirect to dashboard
       if (isAuth)
-        return NextResponse.redirect(new URL('/dashboard', req.url))
+        return NextResponse.redirect(new URL('/welcome', req.url))
 
       // When accessing protected routes and not authenticated,
       return NextResponse.next()
@@ -44,8 +44,12 @@ export default withAuth(
      * When authenticated and accessing / route,
      * redirect to /dashboard
      */
+    // if (isAuth && pathname === '/')
+    //   return NextResponse.redirect(new URL('/dashboard', req.url))
+
     if (isAuth && pathname === '/')
-      return NextResponse.redirect(new URL('/dashboard', req.url))
+      return NextResponse.redirect(new URL('/welcome', req.url))
+
   },
   {
     callbacks: {
@@ -57,5 +61,5 @@ export default withAuth(
 )
 
 export const config = {
-  matcher: ['/', '/signin', '/signup', '/dashboard/:path*']
+  matcher: ['/', '/signin', '/signup', '/dashboard/:path*', '/welcome']
 }
