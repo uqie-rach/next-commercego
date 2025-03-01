@@ -1,4 +1,8 @@
 const defaultTheme = require("tailwindcss/defaultTheme");
+
+import tailwidcssForm from "@tailwindcss/forms";
+import autoprefixer from "autoprefixer";
+
 module.exports = {
   content: [
     // Or if using `src` directory:
@@ -187,5 +191,5 @@ module.exports = {
       },
     },
   },
-  plugins: [require("@tailwindcss/forms"), require("autoprefixer")],
+  plugins: [autoprefixer, tailwidcssForm],
 };
