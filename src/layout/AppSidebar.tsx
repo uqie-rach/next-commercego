@@ -288,24 +288,26 @@ const AppSidebar: React.FC = () => {
         <Link href="/">
           {isExpanded || isHovered || isMobileOpen ? (
             <>
-              <Image
-                className="dark:hidden"
-                src="/images/logo/logo.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              />
-              <Image
+              <div className="flex items-center gap-4 text-xl font-semibold text-gray-600">
+                <Image
+                  src="/images/logo/logo-icon.png"
+                  alt="Logo"
+                  width={32}
+                  height={32}
+                />
+                GDGoC Maliki
+              </div>
+              {/* <Image
                 className="hidden dark:block"
                 src="/images/logo/logo-dark.svg"
                 alt="Logo"
                 width={150}
                 height={40}
-              />
+              /> */}
             </>
           ) : (
             <Image
-              src="/images/logo/logo-icon.svg"
+              src="/images/logo/logo-icon.png"
               alt="Logo"
               width={32}
               height={32}
@@ -348,7 +350,7 @@ const AppSidebar: React.FC = () => {
               {renderMenuItems(othersItems, "others")}
             </div>
 
-            <SignOutButton />
+            <SignOutButton isExpanded={isExpanded} isHovered={isHovered} />
           </div>
         </nav>
       </div>
