@@ -6,9 +6,9 @@ import UserInfoCard from "@/components/user-profile/UserInfoCard";
 import UserMetaCard from "@/components/user-profile/UserMetaCard";
 
 export const metadata: Metadata = {
-  title: "Next.js Profile | CommerceGo - Next.js Dashboard Template",
+  title: "GDG on Campus Maliki Devhub | Profile",
   description:
-    "This is Next.js Profile page for CommerceGo - Next.js Tailwind CSS Admin Dashboard Template",
+    "GDG on Campus Maliki Devhub profile page. Update your profile information.",
 };
 
 export default function Profile() {

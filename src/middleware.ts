@@ -44,9 +44,6 @@ export default withAuth(
      * When authenticated and accessing / route,
      * redirect to /dashboard
      */
-    // if (isAuth && pathname === '/')
-    //   return NextResponse.redirect(new URL('/dashboard', req.url))
-
     if (isAuth && pathname === '/')
       return NextResponse.redirect(new URL('/welcome', req.url))
 

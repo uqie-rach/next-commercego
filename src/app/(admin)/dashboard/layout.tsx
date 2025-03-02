@@ -5,6 +5,7 @@ import AppHeader from "@/layout/AppHeader";
 import AppSidebar from "@/layout/AppSidebar";
 import Backdrop from "@/layout/Backdrop";
 import React from "react";
+import { Toaster } from "react-hot-toast";
 
 export default function AdminLayout({
   children,
@@ -22,6 +23,7 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen xl:flex">
+      <Toaster position='top-center' reverseOrder={false} />
       {/* Sidebar and Backdrop */}
       <AppSidebar />
       <Backdrop />

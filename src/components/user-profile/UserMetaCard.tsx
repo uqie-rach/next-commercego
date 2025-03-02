@@ -1,20 +1,79 @@
 "use client";
+
 import React from "react";
-import { useModal } from "../../hooks/useModal";
-import { Modal } from "../ui/modal";
-import Button from "../ui/button/Button";
-import Input from "../form/input/InputField";
-import Label from "../form/Label";
 import Image from "next/image";
-import Link from "next/link";
+import { Globe2Icon, Loader2, PencilIcon } from "lucide-react";
+import axios from 'axios';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z, ZodError } from "zod";
+import toast from "react-hot-toast";
+
+import { Modal } from "@/components/ui/modal";
+import Button from "@/components/ui/button/Button";
+import Input from "@/components/form/input/InputField";
+import Label from "@/components/form/Label";
+import TextArea from "@/components/form/input/TextArea";
+import Select from "@/components/form/Select";
+
+import { useModal } from "@/hooks/useModal";
+import { useUser } from "@/context/UserContext";
+import { updateUserValidator } from "@/lib/validations/user";
+
+// Define the type of the form data
+type FormData = z.infer<typeof updateUserValidator>
 
 export default function UserMetaCard() {
   const { isOpen, openModal, closeModal } = useModal();
-  const handleSave = () => {
-    // Handle save logic here
-    console.log("Saving changes...");
-    closeModal();
+  const { user } = useUser();
+
+  // Form handler
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
+    resolver: zodResolver(updateUserValidator)
+  })
+
+  async function handleUpdateUser(userData: FormData) {
+    try {
+      const data = updateUserValidator.parse(userData);
+
+      const response = await axios.put(`${process.env.NEXT_PUBLIC_BASE_URL}/api/user/${user?.id}`, {
+        ...data
+      });
+
+      if (response.status === 200) {
+        toast('User updated successfully', {
+          icon: '👏',
+        })
+      }
+    } catch (error) {
+      if (error instanceof axios.AxiosError) {
+        const errorMessage = error?.response?.data?.message;
+        if (errorMessage) {
+          Object.keys(errorMessage).forEach((key) => {
+            setError(key as keyof FormData, { message: errorMessage[key] });
+          });
+        }
+        return;
+      }
+
+      if (error instanceof ZodError) {
+        error.errors.forEach((err) => {
+          setError(err.path[0] as keyof FormData, { message: err.message });
+        });
+        return;
+      }
+    } finally {
+      closeModal()
+      setTimeout(() => window.location.reload(), 1500);
+    }
+
   };
+
   return (
     <>
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
@@ -24,45 +83,32 @@ export default function UserMetaCard() {
               <Image
                 width={80}
                 height={80}
-                src="/images/user/owner.jpg"
+                src={user?.image ? user?.image : "/images/user/owner.jpg"}
                 alt="user"
               />
             </div>
             <div className="order-3 xl:order-2">
               <h4 className="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
-                Musharof Chowdhury
+                {user?.name}
               </h4>
               <div className="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left">
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Team Manager
+                  {user?.profile?.duty || "duty"}
                 </p>
                 <div className="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 xl:block"></div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Arizona, United States
+                  {user?.profile?.location || "location"}
                 </p>
               </div>
             </div>
             <div className="flex items-center order-2 gap-2 grow xl:order-3 xl:justify-end">
-              <a        
-        target="_blank"
-        rel="noreferrer" href='https://www.facebook.com/PimjoHQ' className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
-                <svg
-                  className="fill-current"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M11.6666 11.2503H13.7499L14.5833 7.91699H11.6666V6.25033C11.6666 5.39251 11.6666 4.58366 13.3333 4.58366H14.5833V1.78374C14.3118 1.7477 13.2858 1.66699 12.2023 1.66699C9.94025 1.66699 8.33325 3.04771 8.33325 5.58342V7.91699H5.83325V11.2503H8.33325V18.3337H11.6666V11.2503Z"
-                    fill=""
-                  />
-                </svg>
+              <a href={user?.profile?.website ?? 'https://www.facebook.com'} target="_blank"
+                rel="noreferrer" className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
+                <Globe2Icon size={20} />
               </a>
 
-              <a href='https://x.com/PimjoHQ' target="_blank"
-        rel="noreferrer"  className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
+              <a href={user?.profile?.twitter ?? 'https://x.com'} target="_blank"
+                rel="noreferrer" className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
                 <svg
                   className="fill-current"
                   width="20"
@@ -78,8 +124,8 @@ export default function UserMetaCard() {
                 </svg>
               </a>
 
-              <a href="https://www.linkedin.com/company/pimjo" target="_blank"
-        rel="noreferrer" className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
+              <a href={user?.profile?.linkedin ?? "https://www.linkedin.com/company/gdgocmaliki"} target="_blank"
+                rel="noreferrer" className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
                 <svg
                   className="fill-current"
                   width="20"
@@ -95,8 +141,25 @@ export default function UserMetaCard() {
                 </svg>
               </a>
 
-              <a href='https://instagram.com/PimjoHQ' target="_blank"
-        rel="noreferrer" className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
+              <a href={user?.profile?.github ?? 'https://github.com'} target="_blank"
+                rel="noreferrer" className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
+                <svg
+                  className="fill-current"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M10 0.833374C4.93333 0.833374 0.833328 4.93337 0.833328 10C0.833328 14.0417 3.49999 17.4167 7.16666 18.6167C7.63333 18.7 7.79166 18.425 7.79166 18.1834C7.79166 17.9667 7.78333 17.3 7.77916 16.5417C5.14583 17.0917 4.58333 15.3334 4.58333 15.3334C4.14166 14.2834 3.50833 14 3.50833 14C2.65833 13.4167 3.57499 13.4284 3.57499 13.4284C4.51666 13.4917 5.02499 14.3917 5.02499 14.3917C5.87499 15.8 7.22916 15.3767 7.81249 15.1417C7.89166 14.5584 8.12499 14.1417 8.37916 13.9C6.29166 13.6584 4.09166 12.8667 4.09166 9.36671C4.09166 8.35004 4.46666 7.51671 5.04166 6.86671C4.94999 6.63337 4.62083 5.70004 5.13333 4.45837C5.13333 4.45837 5.93749 4.21254 7.76666 5.44587C8.46666 5.24587 9.23333 5.14587 9.99999 5.14171C10.7667 5.14587 11.5333 5.24587 12.2333 5.44587C14.0625 4.21254 14.8667 4.45837 14.8667 4.45837C15.3792 5.70004 15.05 6.63337 14.9583 6.86671C15.5333 7.51671 15.9083 8.35004 15.9083 9.36671C15.9083 12.8751 13.7042 13.6542 11.6125 13.8917C11.9292 14.1917 12.2125 14.7917 12.2125 15.7084C12.2125 17.0417 12.2 17.8834 12.2 18.1834C12.2 18.4284 12.3583 18.7067 12.8333 18.6167C16.5 17.4167 19.1667 14.0417 19.1667 10C19.1667 4.93337 15.0667 0.833374 10 0.833374Z"
+                    fill=""
+                  />
+                </svg>
+              </a>
+
+              <a href={user?.profile?.instagram ?? 'https://instagram.com'} target="_blank"
+                rel="noreferrer" className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-gray-300 bg-white text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
                 <svg
                   className="fill-current"
                   width="20"
@@ -117,25 +180,12 @@ export default function UserMetaCard() {
             onClick={openModal}
             className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
           >
-            <svg
-              className="fill-current"
-              width="18"
-              height="18"
-              viewBox="0 0 18 18"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206ZM12.9698 3.84272C13.2627 3.54982 13.7376 3.54982 14.0305 3.84272L14.6934 4.50563C14.9863 4.79852 14.9863 5.2734 14.6934 5.56629L14.044 6.21573L12.3204 4.49215L12.9698 3.84272ZM11.2597 5.55281L5.6359 11.1766C5.53309 11.2794 5.46238 11.4099 5.43238 11.5522L5.01758 13.5185L6.98394 13.1037C7.1262 13.0737 7.25666 13.003 7.35947 12.9002L12.9833 7.27639L11.2597 5.55281Z"
-                fill=""
-              />
-            </svg>
+            <PencilIcon size={18} />
             Edit
           </button>
         </div>
       </div>
+
       <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
         <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
           <div className="px-2 pr-14">
@@ -146,7 +196,7 @@ export default function UserMetaCard() {
               Update your details to keep your profile up-to-date.
             </p>
           </div>
-          <form className="flex flex-col">
+          <form onSubmit={handleSubmit(handleUpdateUser)} className="flex flex-col">
             <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
               <div>
                 <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
@@ -155,32 +205,82 @@ export default function UserMetaCard() {
 
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div>
-                    <Label>Facebook</Label>
+                    <Label>Github</Label>
                     <Input
+                      {...register('github')}
                       type="text"
-                      defaultValue="https://www.facebook.com/PimjoHQ"
+                      defaultValue={user?.profile?.github ?? "https://www.github.com"}
+                      error={!!errors.name}
+                      hint={errors.name?.message}
                     />
+                    {
+                      errors.github && <p className="mt-3 text-sm text-error-500">
+                        {errors.github?.message}
+                      </p>
+                    }
+                  </div>
+                  <div>
+                    <Label>Personal Website</Label>
+                    <Input
+                      {...register('website')}
+                      type="text"
+                      defaultValue={user?.profile?.website ?? "https://www.google.com"}
+                      error={!!errors.name}
+                      hint={errors.name?.message}
+                    />
+                    {
+                      errors.website && <p className="mt-3 text-sm text-error-500">
+                        {errors.website?.message}
+                      </p>
+                    }
                   </div>
 
                   <div>
                     <Label>X.com</Label>
-                    <Input type="text" defaultValue="https://x.com/PimjoHQ" />
+                    <Input
+                      {...register('twitter')}
+                      type="text"
+                      defaultValue={user?.profile?.twitter ?? "https://x.com"}
+                      error={!!errors.name}
+                      hint={errors.name?.message}
+                    />
+                    {
+                      errors.twitter && <p className="mt-3 text-sm text-error-500">
+                        {errors.twitter?.message}
+                      </p>
+                    }
                   </div>
 
                   <div>
                     <Label>Linkedin</Label>
                     <Input
+                      {...register('linkedin')}
                       type="text"
-                      defaultValue="https://www.linkedin.com/company/pimjo"
+                      defaultValue={user?.profile?.linkedin ?? "https://www.linkedin.com/company/pimjo"}
+                      error={!!errors.name}
+                      hint={errors.name?.message}
                     />
+                    {
+                      errors.linkedin && <p className="mt-3 text-sm text-error-500">
+                        {errors.linkedin?.message}
+                      </p>
+                    }
                   </div>
 
-                  <div>
+                  <div className="col-span-2">
                     <Label>Instagram</Label>
                     <Input
+                      {...register('instagram')}
                       type="text"
-                      defaultValue="https://instagram.com/PimjoHQ"
+                      defaultValue={user?.profile?.instagram ?? "https://instagram.com"}
+                      error={!!errors.name}
+                      hint={errors.name?.message}
                     />
+                    {
+                      errors.instagram && <p className="mt-3 text-sm text-error-500">
+                        {errors.instagram?.message}
+                      </p>
+                    }
                   </div>
                 </div>
               </div>
@@ -191,43 +291,89 @@ export default function UserMetaCard() {
 
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div className="col-span-2 lg:col-span-1">
-                    <Label>First Name</Label>
-                    <Input type="text" defaultValue="Musharof" />
+                    <Label>FullName</Label>
+                    <Input {...register('name')} type="text" defaultValue={user?.name ?? "name"} />
+                    {
+                      errors.name && <p className="mt-3 text-sm text-error-500">
+                        {errors.name?.message}
+                      </p>
+                    }
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
-                    <Label>Last Name</Label>
-                    <Input type="text" defaultValue="Chowdhury" />
+                    <Label>Duty</Label>
+                    <Select
+                      {...register('duty')}
+                      options={[
+                        { value: "lead", label: "Lead" },
+                        { value: "core", label: "Core" },
+                        { value: "associate core", label: "Associate Core" },
+                      ]}
+                      defaultValue="user"
+                      placeholder="Select a role"
+                      error={!!errors.duty}
+                      hint={errors.duty?.message}
+                    />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Email Address</Label>
-                    <Input type="text" defaultValue="randomuser@pimjo.com" />
+                    <Input {...register('email')} type="text" defaultValue={user?.email ?? "youremail@gmail.com"} />
+                    {
+                      errors.email && <p className="mt-3 text-sm text-error-500">
+                        {errors.email?.message}
+                      </p>
+                    }
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>location</Label>
+                    <Input {...register('location')} type="text" defaultValue={user?.profile?.location ?? "City, Country"} />
+                    {
+                      errors.location && <p className="mt-3 text-sm text-error-500">
+                        {errors.location?.message}
+                      </p>
+                    }
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Phone</Label>
-                    <Input type="text" defaultValue="+09 363 398 46" />
+                    <Input {...register('phone')} type="text" defaultValue={user?.profile?.phone ?? "+62884848102"} />
+                    {
+                      errors.phone && <p className="mt-3 text-sm text-error-500">
+                        {errors.phone?.message}
+                      </p>
+                    }
                   </div>
 
                   <div className="col-span-2">
                     <Label>Bio</Label>
-                    <Input type="text" defaultValue="Team Manager" />
+                    <TextArea {...register('bio')} rows={3} placeholder="Bio" defaultValue={user?.profile?.bio} />
+                    {
+                      errors.bio && <p className="mt-3 text-sm text-error-500">
+                        {errors.bio?.message}
+                      </p>
+                    }
                   </div>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
+
+            {/* Submit Button */}
+            <div className="flex items-center gap-3 lg:justify-end">
               <Button size="sm" variant="outline" onClick={closeModal}>
                 Close
               </Button>
-              <Button size="sm" onClick={handleSave}>
+              <Button size="sm" disabled={isSubmitting}>
+                {
+                  isSubmitting && <Loader2 className='animate-spin h-4 w-4' /> || null
+                }
                 Save Changes
               </Button>
             </div>
           </form>
-        </div>
-      </Modal>
+        </div >
+      </Modal >
     </>
   );
 }

@@ -4,7 +4,8 @@ import GoogleProvider from 'next-auth/providers/google'
 import CredentialProvider from 'next-auth/providers/credentials'
 import { compare } from 'bcrypt-ts'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
-import { findUserByEmail } from './mongo/user'
+
+import { findUserByEmail, findUserProfileById, insertDefaultUser } from './mongo/user'
 import { prisma } from './mongo/db'
 
 export const authOptions: NextAuthOptions = {
@@ -58,26 +59,35 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     jwt: async ({ token, user }) => {
 
+      const userDb = await findUserProfileById(user?.id as string);
+
+      console.log('user at db: ', userDb)
+      if (!userDb) {
+        await insertDefaultUser(user?.id);
+      }
+
       if (user) {
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
-        token.role = user.role; // Tambahkan role ke token
+        token.image = user.image;
       }
 
       return token;
     },
     session: async ({ session, token }) => {
-
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string; // Tambahkan role ke session
+        session.user.id = token.id;
+        session.user.name = token.name;
+        session.user.email = token.email;
+        session.user.image = token.image as string | null | undefined;
       }
+
       return session;
     },
     redirect: async () => {
       return '/welcome'
-    }
+    },
   },
 }
 
