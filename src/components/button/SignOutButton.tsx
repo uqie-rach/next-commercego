@@ -1,6 +1,7 @@
 import SignOutIcon from '@/icons/SignOutIcon';
 import { signOut } from 'next-auth/react';
 import React from 'react';
+import toast from 'react-hot-toast';
 
 interface SignOutButtonProps {
   isExpanded: boolean;
@@ -10,9 +11,11 @@ interface SignOutButtonProps {
 const SignOutButton = ({ isExpanded, isHovered }: SignOutButtonProps) => {
   const handleSignOut = async () => {
     try {
+      toast.success("Signed out successfully");
       await signOut({ callbackUrl: "/signin" });
     } catch (error) {
       console.error(error);
+      toast.error("Sign out failed");
     }
   };
 
