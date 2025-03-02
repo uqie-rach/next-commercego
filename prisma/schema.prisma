@@ -8,18 +8,38 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid()) @map("_id") // ObjectId di MongoDB
-  name          String
-  email         String    @unique
-  emailVerified DateTime? // Perlu ditambahkan agar NextAuth tidak error
-  password      String? // Bisa null jika user login via Google
-  image         String? // Foto profil user (jika ada)
-  role          String    @default("user") // Bisa "admin" atau "user"
-  createdAt     DateTime  @default(now())
+  id        String    @id @default(cuid()) @map("_id")
+  name      String
+  email     String    @unique
+  emailVerified DateTime? @default(now())
+  password  String?
+  image     String?   @default("imageurl")
+  role      String    @default("user")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  accounts Account[] // Relasi ke akun OAuth
-  sessions Session[] // Relasi ke session
+  accounts  Account[] // Relasi ke akun OAuth
+  sessions  Session[] // Relasi ke session
+
+  profile   UserProfile? // Relasi ke UserProfile
 }
+
+model UserProfile {
+  id        String  @id @default(cuid()) @map("_id")
+  userId    String  @unique
+  phone     String? @default("+62")
+  duty      String? @default("member")
+  bio       String? @default("bio")
+  location  String? @default("your location")
+  linkedin  String? @default("https://www.linkedin.com")
+  github    String? @default("https://www.github.com")
+  twitter   String? @default("https://www.twitter.com")
+  instagram String? @default("https://www.instagram.com")
+  website   String? @default("https://www.google.com")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 
 model Session {
   id           String   @id @default(cuid()) @map("_id")
