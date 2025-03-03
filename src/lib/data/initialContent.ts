@@ -4,7 +4,7 @@ export const initialContent = {
     {
       "type": "heading",
       "attrs": {
-        "textAlign": null,
+        "textAlign": 'center',
         "level": 1
       },
       "content": [
