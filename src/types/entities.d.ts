@@ -18,3 +18,12 @@ export interface UserProfile {
   instagram: string
   website: string
 }
+
+export interface Article {
+  id: string
+  title: string
+  content: string
+  userId: string
+  createdAt?: string
+  user?: User
+}
