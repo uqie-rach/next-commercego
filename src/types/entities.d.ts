@@ -22,7 +22,7 @@ export interface UserProfile {
 export interface Article {
   id: string
   title: string
-  content: string
+  content: string | JSONContent
   userId: string
   createdAt?: string
   user?: User
