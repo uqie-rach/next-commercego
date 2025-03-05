@@ -25,13 +25,15 @@ export default function ArticlePage() {
   async function fetchArticles(userId: string) {
     try {
       async function get() {
-        const res = await axios.get(`/api/articles`, {
-          params: { userId }
+        const res = await fetch(`/api/articles`, {
+          cache: 'no-cache',
         });
 
-        setArticles(res.data.data);
+        const data = await res.json();
+        console.log(data.data)
+        setArticles(data.data);
 
-        return res.data;
+        return data;
       }
       // Show loading toast while fetching
 
@@ -97,62 +99,3 @@ export default function ArticlePage() {
     </>
   )
 }
-
-// const articles: Article[] = [
-//   {
-//     id: 1,
-//     title: "Lorem ipsum dolor sit amet",
-//     content: "",
-//     userId: 1,
-//     createdAt: "2021-09-01T00:00:00.000Z",
-//   },
-//   {
-//     id: 2,
-//     title: "Consectetur adipiscing elit",
-//     content: "",
-//     userId: 1,
-//     createdAt: "2021-09-01T00:00:00.000Z",
-//   },
-//   {
-//     id: 3,
-//     title: "Sed do eiusmod tempor incididunt",
-//     content: "",
-//     userId: 1,
-//     createdAt: "2021-09-01T00:00:00.000Z",
-//   },
-//   {
-//     id: 4,
-//     title: "Ut labore et dolore magna aliqua",
-//     content: "",
-//     userId: 1,
-//     createdAt: "2021-09-01T00:00:00.000Z",
-//   },
-//   {
-//     id: 5,
-//     title: "Ut enim ad minim veniam",
-//     content: "",
-//     userId: 1,
-//     createdAt: "2021-09-01T00:00:00.000Z",
-//   },
-//   {
-//     id: 6,
-//     title: "Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat",
-//     content: "",
-//     userId: 1,
-//     createdAt: "2021-09-01T00:00:00.000Z",
-//   },
-//   {
-//     id: 7,
-//     title: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur",
-//     content: "",
-//     userId: 1,
-//     createdAt: "2021-09-01T00:00:00.000Z",
-//   },
-//   {
-//     id: 8,
-//     title: "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum",
-//     content: "",
-//     userId: 1,
-//     createdAt: "2021-09-01T00:00:00.000Z",
-//   }
-// ]
