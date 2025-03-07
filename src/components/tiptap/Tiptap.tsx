@@ -179,9 +179,21 @@ const Tiptap = () => {
       saveArticle(),
       {
         loading: 'Saving...',
-        success: (res) => `Content saved successfully, ${res.data.title}`,
+        success: `Content saved successfully`,
         error: (err) => `Failed to save content, ${err.message}`,
       });
+
+
+    // Redirect to the articles
+    setTimeout(() => {
+      // Clear the editor content
+      editor.commands.clearContent();
+
+      // Clear the content from local storage
+      localStorage.removeItem('content');
+
+      window.location.reload();
+    }, 2000);
   };
 
   const handlePreviewMode = () => {

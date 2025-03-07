@@ -14,6 +14,7 @@ const TransitionPage = ({ userData }: { userData: Session | null }) => {
 
     if (session) {
       saveUser({
+        id: session?.user?.id ?? null,
         name: session?.user?.name ?? null,
         email: session?.user?.email ?? null,
         image: session?.user?.image ?? null,
