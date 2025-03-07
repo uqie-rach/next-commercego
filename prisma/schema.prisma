@@ -8,20 +8,21 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(cuid()) @map("_id")
-  name      String
-  email     String    @unique
+  id            String    @id @default(cuid()) @map("_id")
+  name          String
+  email         String    @unique
   emailVerified DateTime? @default(now())
-  password  String?
-  image     String?   @default("imageurl")
-  role      String    @default("user")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  password      String?
+  image         String?   @default("imageurl")
+  role          String    @default("user")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  accounts  Account[] // Relasi ke akun OAuth
-  sessions  Session[] // Relasi ke session
+  accounts Account[] // Relasi ke akun OAuth
+  sessions Session[] // Relasi ke session
 
-  profile   UserProfile? // Relasi ke UserProfile
+  profile UserProfile? // Relasi ke UserProfile
+  article Article[] // Relasi ke Article
 }
 
 model UserProfile {
@@ -39,7 +40,6 @@ model UserProfile {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
 
 model Session {
   id           String   @id @default(cuid()) @map("_id")
@@ -67,4 +67,14 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+}
+
+model Article {
+  id        String   @id @default(uuid()) @map("_id")
+  title     String
+  content   Json
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

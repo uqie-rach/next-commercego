@@ -1,12 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useEditor, EditorContent, Node, mergeAttributes, FloatingMenu, Editor, Command, JSONContent, HTMLContent, generateHTML } from "@tiptap/react";
+import { useEditor, EditorContent, Node, mergeAttributes, FloatingMenu, Editor, Command, generateHTML } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import Hightlight from "@tiptap/extension-highlight";
-import { all, createLowlight } from 'lowlight'
 import {
   Bold as BoldIcon,
   Italic as ItalicIcon,
@@ -34,9 +33,11 @@ import "@/styles/tiptap-editor.css"
 import { initialContent } from "@/lib/data/initialContent";
 import toast from "react-hot-toast";
 import axios from "axios";
-import { useUser } from "@/context/UserContext";
 import Input from "../form/input/InputField";
-import { articleSchema } from "@/lib/validations/article";
+import { editArticleSchema } from "@/lib/validations/article";
+import { Article } from "@/types/entities";
+import { useRouter } from "next/navigation";
+
 
 
 // Lowlight for code block syntax highlighting
@@ -67,41 +68,41 @@ const Foo = Node.create({
   },
 })
 
-const Tiptap = () => {
+const extensions = [
+  StarterKit,
+  Underline,
+  TextAlign.configure({
+    types: ['heading', 'paragraph'],
+  }),
+  Hightlight,
+  Foo,
+  Image.configure({
+    allowBase64: true,
+    HTMLAttributes: {
+      class: 'mx-auto',
+    }
+  }),
+];
+
+const EditArticle = () => {
   const [headingLevel, setHeadingLevel] = useState(1);
-  const [errors, setErrors] = useState<{ title?: string; content?: string }>({});
+  const [article, setArticle] = useState<Article | null>(null);
 
   const [active, setActive] = useState<'editor' | 'preview'>('editor');
-  const [content, setContent] = useState<JSONContent | null>(initialContent);
+
+  const router = useRouter();
 
   const titleRef = useRef<HTMLInputElement>(null);
-
-  const { user } = useUser();
 
   useEffect(() => {
     toast(`${active === 'editor' ? 'Editor' : 'Preview'} mode`, {
       icon: active === 'editor' ? <Edit2Icon size={18} /> : <EyeIcon size={18} />,
-      position: 'bottom-center',
       duration: 2000,
     })
   }, [active])
 
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-      }),
-      Hightlight,
-      Foo,
-      Image.configure({
-        allowBase64: true,
-        HTMLAttributes: {
-          class: 'mx-auto',
-        }
-      }),
-    ],
+    extensions: extensions,
     editorProps: {
       attributes: {
         class: "prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl focus:outline-none min-h-[250px]",
@@ -112,11 +113,25 @@ const Tiptap = () => {
   });
 
   useEffect(() => {
-    // Load content from local storage
-    if (editor && content) {
-      editor.commands.setContent(content);
+    const fromCache = localStorage.getItem('article');
+    const parsedArticle: Article | null = JSON.parse(fromCache);
+
+    if (fromCache) {
+      const convertedContent = generateHTML(JSON.parse(parsedArticle?.content), extensions)
+
+      if (parsedArticle) {
+        parsedArticle.content = convertedContent;
+      }
+
+      editor?.commands.setContent(parsedArticle?.content);
+      setArticle(parsedArticle);
     }
-  }, [editor, content]);
+
+    // Set the title input field value
+    if (titleRef.current) {
+      titleRef.current.value = parsedArticle?.title || '';
+    }
+  }, [editor]);
 
   const addImage = useCallback(() => {
     const url = window.prompt('URL')
@@ -128,92 +143,81 @@ const Tiptap = () => {
 
   if (!editor) return null;
 
-  const saveContent = async () => {
-    if (!titleRef?.current?.value) {
-      toast.error('Title cannot be empty!');
+  const updateArticle = async () => {
+    try {
+      const newArticle = {
+        content: JSON.stringify(editor.getJSON()),
+        title: titleRef.current?.value
+      };
 
-      // Focus on the title input field
-      titleRef.current?.focus();
-      return;
-    }
-    const newArticle = {
-      content: JSON.stringify(editor.getJSON()),
-      userId: user?.id,
-      title: titleRef.current?.value
+      const result = editArticleSchema.safeParse(newArticle);
+
+      if (!result.success) {
+        const formattedErrors = result.error.format();
+
+        if (formattedErrors.title?._errors[0]) {
+          toast.error(formattedErrors.title?._errors[0]);
+        }
+
+        if (formattedErrors.content?._errors[0]) {
+          toast.error(formattedErrors.content?._errors[0]);
+        }
+
+        return;
+      }
+
+      const saveArticle = async () => {
+        const response = await axios.put(`${process.env.NEXT_PUBLIC_BASE_URL}/api/articles/${article?.id}`, result.data, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        return response;
+      }
+
+      toast.promise(
+        saveArticle(),
+        {
+          loading: 'Saving...',
+          success: `Content saved successfully, redirecting to your articles`,
+          error: (err) => `Failed to save content, ${err.message}`,
+        });
+
+      localStorage.removeItem('article');
+
+      setTimeout(() => {
+        router.push('/dashboard/article');
+      }, 2000);
+
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message)
+
+        if (error instanceof axios.AxiosError) {
+          toast.error(error.response?.data.message);
+        }
+      }
     };
-
-    const result = articleSchema.safeParse(newArticle);
-
-    console.log(result)
-    if (!result.success) {
-      const formattedErrors = result.error.format();
-      setErrors({
-        title: formattedErrors.title?._errors[0],
-        content: formattedErrors.content?._errors[0],
-      });
-
-      if (formattedErrors.title?._errors[0]) {
-        toast.error(formattedErrors.title?._errors[0]);
-      }
-
-      if (formattedErrors.content?._errors[0]) {
-        toast.error(formattedErrors.content?._errors[0]);
-      }
-
-      if (formattedErrors.userId?._errors[0]) {
-        toast.error(formattedErrors.userId?._errors[0]);
-      } else {
-        toast.error('Failed to save content');
-      }
-
-      return;
-    }
-
-    const saveArticle = async () => {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/api/articles`, result.data)
-
-      return response;
-    }
-
-    toast.promise(
-      saveArticle(),
-      {
-        loading: 'Saving...',
-        success: `Content saved successfully`,
-        error: (err) => `Failed to save content, ${err.message}`,
-      });
-
-
-    // Redirect to the articles
-    setTimeout(() => {
-      // Clear the editor content
-      editor.commands.clearContent();
-
-      // Clear the content from local storage
-      localStorage.removeItem('content');
-
-      window.location.reload();
-    }, 2000);
-  };
+  }
 
   const handlePreviewMode = () => {
-    setContent(editor.getJSON());
+    setArticle({
+      ...article!,
+      title: titleRef.current?.value || '',
+      content: generateHTML(editor.getJSON(), extensions)
+    })
     setActive('preview');
-    console.log('preview mode')
+    scrollToTop();
   }
 
   const handleEditorMode = () => {
-    saveContentToLocalStorage();
-    setContent(editor.getJSON());
     setActive('editor');
-
-    console.log('editor mode')
+    scrollToTop();
   }
 
-  const saveContentToLocalStorage = () => {
-    if (editor) {
-      localStorage.setItem('content', JSON.stringify(editor.getJSON()));
-    }
+  const scrollToTop = () => {
+    window.scrollTo(0, 0);
   }
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -224,26 +228,8 @@ const Tiptap = () => {
 
   }
 
-  const previewHTML = content ? generateHTML(content, [
-    StarterKit,
-    Underline,
-    TextAlign.configure({
-      types: ['heading', 'paragraph'],
-    }),
-    Hightlight,
-    Foo,
-    Image.configure({
-      allowBase64: true,
-      HTMLAttributes: {
-        class: 'mx-auto',
-      }
-    }),
-  ]) : '';
-
-
   return (
     <div className="p-4 w-full mx-auto bg-white dark:bg-gray-900 rounded-lg relative">
-
       {
         active === 'editor' ? (
           <>
@@ -379,7 +365,7 @@ const Tiptap = () => {
 
             <div className="my-4 space-y-2">
               <label htmlFor="title" className="text-sm lg:text-lg font-semibold text-gray-800 dark:text-gray-200">Title</label>
-              <Input type="text" placeholder="Enter the title here..." className="w-full p-2 bg-white rounded-md mb-4" ref={titleRef} onChange={handleTitleChange} />
+              <Input type="text" placeholder="Enter the title here..." className="w-full p-2 bg-white rounded-md mb-4" ref={titleRef} onChange={handleTitleChange} defaultValue={article?.title} />
             </div>
 
             {/* Editor */}
@@ -500,17 +486,23 @@ const Tiptap = () => {
         ) : (
           <div className="p-2 bg-white min-h-[200px] mt-4">
             <div className="prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl tiptap">
-              <div key={active} dangerouslySetInnerHTML={{ __html: previewHTML }}></div>
+              <h1 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 text-center">
+                {article?.title}
+              </h1>
+              <div key={active} dangerouslySetInnerHTML={{ __html: article?.content }}></div>
             </div>
           </div>
         )}
 
       {/* Save Button */}
       <div className="flex justify-end mt-6 gap-5">
-        <button className="flex items-center px-6 py-2 rounded-lg bg-brand-100 hover:bg-brand-200 text-base xl:text-lg text-brand-600" onClick={saveContent}>
-          <SaveIcon size={18} className="mr-2" />
-          Save
-        </button>
+        {
+          active === 'editor' &&
+          <button className="flex items-center px-6 py-2 rounded-lg bg-brand-100 hover:bg-brand-200 text-base xl:text-lg text-brand-600" onClick={updateArticle}>
+            <SaveIcon size={18} className="mr-2" />
+            Save
+          </button>
+        }
         {
           active === 'editor' &&
           <button className="flex items-center px-6 py-2 rounded-lg bg-white hover:bg-gray-100 text-base xl:text-lg text-gray-700" onClick={handlePreviewMode}>
@@ -527,7 +519,7 @@ const Tiptap = () => {
   );
 };
 
-export default Tiptap;
+export default EditArticle;
 
 interface ToolbarButtonProps {
   editor: Editor | null;

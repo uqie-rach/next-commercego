@@ -61,7 +61,7 @@ export const authOptions: NextAuthOptions = {
 
       const userDb = await findUserProfileById(user?.id as string);
 
-      console.log('user at db: ', userDb)
+      console.log('[auth.ts] jwt() executed')
       if (!userDb) {
         await insertDefaultUser(user?.id);
       }
@@ -76,6 +76,7 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     session: async ({ session, token }) => {
+      console.log('[auth.ts] session() executed')
       if (session.user) {
         session.user.id = token.id;
         session.user.name = token.name;
